@@ -155,6 +155,33 @@ enum
     PLACE_CENTER
 };
 
+enum
+{
+    QUBES_LABEL_DOM0 = 0,
+    QUBES_LABEL_RED = 1,
+    QUBES_LABEL_ORANGE = 2,
+    QUBES_LABEL_YELLOW = 3,
+    QUBES_LABEL_GREEN = 4,
+    QUBES_LABEL_GRAY = 5,
+    QUBES_LABEL_BLUE = 6,
+    QUBES_LABEL_PURPLE = 7,
+    QUBES_LABEL_BLACK = 8,
+    MAX_QUBES_LABELS = 9
+};
+
+/* RGB values */
+static const guint qubes_label_colors[] = {
+    0xFFFFFFFF, /* QUBES_LABEL_DOM0 */
+    0xcc0000,   /* QUBES_LABEL_RED */
+    0xf57900,   /* QUBES_LABEL_ORANGE */
+    0xedd400,   /* QUBES_LABEL_YELLOW */
+    0x73d216,   /* QUBES_LABEL_GREEN */
+    0x555753,   /* QUBES_LABEL_GRAY */
+    0x3465a4,   /* QUBES_LABEL_BLUE */
+    0x75507b,   /* QUBES_LABEL_PURPLE */
+    0x000000,   /* QUBES_LABEL_BLACK */
+};
+
 struct _Settings
 {
     gchar  *option;
@@ -190,6 +217,7 @@ struct _XfwmParams
     int shadow_delta_y;
     int shadow_opacity;
     int snap_width;
+    gchar *theme;
     int title_alignment;
     int title_horizontal_offset;
     int title_shadow[2];
@@ -243,5 +271,9 @@ gboolean                 reloadSettings                         (DisplayInfo *,
                                                                  int);
 gboolean                 initSettings                           (ScreenInfo *);
 void                     closeSettings                          (ScreenInfo *);
+void                     unloadSingleDecoration                 (Decoration *decoration);
+Decoration *getDecorationForColor(ScreenInfo *screen_info, guint32 color);
+
+#define QUBES_LABEL_DOM0 0xFFFFFFFF
 
 #endif /* INC_SETTINGS_H */

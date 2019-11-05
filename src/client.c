@@ -167,6 +167,93 @@ clientUpdateColormaps (Client *c)
     }
 }
 
+void
+getQubesLabel (Client *c)
+{
+    ScreenInfo *screen_info;
+    DisplayInfo *display_info;
+    Atom atom_label;
+
+    screen_info = c->screen_info;
+    display_info = screen_info->display_info;
+
+    atom_label = XInternAtom(display_info->dpy, "_QUBES_LABEL", TRUE);
+
+    if (atom_label == 0) {
+        c->qubes_label_color = QUBES_LABEL_DOM0;
+    } else {
+        Atom actual_type;
+        int actual_format;
+        unsigned long nitems = 0, bytes_left;
+        char *data = 0;
+
+        if ((XGetWindowProperty (display_info->dpy, c->window, atom_label, 0L, 1L,
+                        FALSE, AnyPropertyType, &actual_type, &actual_format, &nitems,
+                        &bytes_left, (unsigned char **) &data) == Success))
+        {
+            if (nitems != 1) {
+                // ERROR? Only Dom0 Windows don't have this property set...
+                c->qubes_label_color = QUBES_LABEL_DOM0;
+            } else {
+                int qubes_label = (int)*data;
+                if (qubes_label >= 0 && qubes_label < MAX_QUBES_LABELS) {
+                    c->qubes_label_color = qubes_label_colors[qubes_label];
+                } else {
+                    /* out of range?! */
+                    c->qubes_label_color = QUBES_LABEL_RED;
+                }
+            }
+        } else {
+            c->qubes_label_color = QUBES_LABEL_DOM0;
+        }
+    }
+}
+
+void
+getQubesVmName (Client *c)
+{
+    ScreenInfo *screen_info;
+    DisplayInfo *display_info;
+    Atom atom_vmname;
+
+    screen_info = c->screen_info;
+    display_info = screen_info->display_info;
+
+    if (c->qubes_vmname)
+        return;
+
+    atom_vmname = XInternAtom(display_info->dpy, "_QUBES_VMNAME", TRUE);
+
+    if (atom_vmname == 0) {
+        c->qubes_vmname = g_strdup("[Dom0] ");
+    } else {
+        Atom actual_type;
+        int actual_format;
+        unsigned long nitems = 0, bytes_left;
+        char *data = 0;
+
+        if ((XGetWindowProperty (display_info->dpy, c->window, atom_vmname, 0L, 0L,
+                        FALSE, AnyPropertyType, &actual_type, &actual_format, &nitems,
+                        &bytes_left, (unsigned char **) &data) == Success))
+        {
+            if (bytes_left > 0) {
+                if ((XGetWindowProperty (display_info->dpy, c->window, atom_vmname, 0L, bytes_left,
+                                FALSE, AnyPropertyType, &actual_type, &actual_format, &nitems,
+                                &bytes_left, (unsigned char **) &data) == Success))
+                {
+                    c->qubes_vmname = g_strdup_printf (_("[%s] "), data);
+                } else {
+                    c->qubes_vmname = g_strdup (_("[ERROR Reading VM name?!] "));
+                }
+            } else {
+                c->qubes_vmname = g_strdup("[Dom0] ");
+            }
+        } else {
+            c->qubes_vmname = g_strdup("[Dom0] ");
+        }
+    }
+}
+
 static gchar*
 clientCreateTitleName (Client *c, gchar *name, gchar *hostname)
 {
@@ -180,14 +267,16 @@ clientCreateTitleName (Client *c, gchar *name, gchar *hostname)
     screen_info = c->screen_info;
     display_info = screen_info->display_info;
 
+    getQubesVmName (c);
+
     if (strlen (hostname) && (display_info->hostname) && (g_ascii_strcasecmp (display_info->hostname, hostname)))
     {
         /* TRANSLATORS: "(on %s)" is like "running on" the name of the other host */
-        title = g_strdup_printf (_("%s (on %s)"), name, hostname);
+        title = g_strdup_printf (_("%s%s (on %s)"), c->qubes_vmname, name, hostname);
     }
     else
     {
-        title = g_strdup (name);
+        title = g_strdup_printf ("%s%s", c->qubes_vmname, name);
     }
 
     return title;
@@ -1336,6 +1425,10 @@ clientFree (Client *c)
     {
         g_free (c->hostname);
     }
+    if (c->qubes_vmname)
+    {
+        g_free (c->qubes_vmname);
+    }
     if (c->size)
     {
         XFree (c->size);
@@ -1448,6 +1541,7 @@ static void
 clientUpdateIconPix (Client *c)
 {
     ScreenInfo *screen_info;
+    Decoration *decoration;
     gint size;
     GdkPixbuf *icon;
     int i;
@@ -1457,12 +1551,13 @@ clientUpdateIconPix (Client *c)
     TRACE ("client \"%s\" (0x%lx)", c->name, c->window);
 
     screen_info = c->screen_info;
+    decoration = getDecorationForColor(screen_info, c->qubes_label_color);
     for (i = 0; i < STATE_TOGGLED; i++)
     {
         xfwmPixmapFree (&c->appmenu[i]);
     }
 
-    if (xfwmPixmapNone(&screen_info->buttons[MENU_BUTTON][ACTIVE]))
+    if (xfwmPixmapNone(&decoration->buttons[MENU_BUTTON][ACTIVE]))
     {
         /* The current theme has no menu button */
         return;
@@ -1470,13 +1565,13 @@ clientUpdateIconPix (Client *c)
 
     for (i = 0; i < STATE_TOGGLED; i++)
     {
-        if (!xfwmPixmapNone(&screen_info->buttons[MENU_BUTTON][i]))
+        if (!xfwmPixmapNone(&decoration->buttons[MENU_BUTTON][i]))
         {
-            xfwmPixmapDuplicate (&screen_info->buttons[MENU_BUTTON][i], &c->appmenu[i]);
+            xfwmPixmapDuplicate (&decoration->buttons[MENU_BUTTON][i], &c->appmenu[i]);
         }
     }
-    size = MIN (screen_info->buttons[MENU_BUTTON][ACTIVE].width,
-                screen_info->buttons[MENU_BUTTON][ACTIVE].height);
+    size = MIN (decoration->buttons[MENU_BUTTON][ACTIVE].width,
+                decoration->buttons[MENU_BUTTON][ACTIVE].height);
 
     if (size > 1)
     {
@@ -1643,6 +1738,11 @@ clientFrame (DisplayInfo *display_info, Window w, gboolean recapture)
     getWindowHostname (display_info, c->window, &c->hostname);
     getTransientFor (display_info, screen_info->xroot, c->window, &c->transient_for);
     XChangeSaveSet(display_info->dpy, c->window, SetModeInsert);
+
+    /* Qubes window decoration */
+    getQubesLabel(c);
+    getQubesVmName(c);
+    clientUpdateName(c);
 
     /* Initialize structure */
     c->size = NULL;
@@ -3933,9 +4033,11 @@ xfwmPixmap *
 clientGetButtonPixmap (Client *c, int button, int state)
 {
     ScreenInfo *screen_info;
+    Decoration *decoration;
 
     TRACE ("button=%i, state=%i", button, state);
     screen_info = c->screen_info;
+    decoration = getDecorationForColor(screen_info, c->qubes_label_color);
     switch (button)
     {
         case MENU_BUTTON:
@@ -3947,32 +4049,32 @@ clientGetButtonPixmap (Client *c, int button, int state)
             break;
         case SHADE_BUTTON:
             if (FLAG_TEST (c->flags, CLIENT_FLAG_SHADED)
-                && (!xfwmPixmapNone(&screen_info->buttons[SHADE_BUTTON][state + STATE_TOGGLED])))
+                && (!xfwmPixmapNone(&decoration->buttons[SHADE_BUTTON][state + STATE_TOGGLED])))
             {
-                return &screen_info->buttons[SHADE_BUTTON][state + STATE_TOGGLED];
+                return &decoration->buttons[SHADE_BUTTON][state + STATE_TOGGLED];
             }
-            return &screen_info->buttons[SHADE_BUTTON][state];
+            return &decoration->buttons[SHADE_BUTTON][state];
             break;
         case STICK_BUTTON:
             if (FLAG_TEST (c->flags, CLIENT_FLAG_STICKY)
-                && (!xfwmPixmapNone(&screen_info->buttons[STICK_BUTTON][state + STATE_TOGGLED])))
+                && (!xfwmPixmapNone(&decoration->buttons[STICK_BUTTON][state + STATE_TOGGLED])))
             {
-                return &screen_info->buttons[STICK_BUTTON][state + STATE_TOGGLED];
+                return &decoration->buttons[STICK_BUTTON][state + STATE_TOGGLED];
             }
-            return &screen_info->buttons[STICK_BUTTON][state];
+            return &decoration->buttons[STICK_BUTTON][state];
             break;
         case MAXIMIZE_BUTTON:
             if (FLAG_TEST (c->flags, CLIENT_FLAG_MAXIMIZED)
-                && (!xfwmPixmapNone(&screen_info->buttons[MAXIMIZE_BUTTON][state + STATE_TOGGLED])))
+                && (!xfwmPixmapNone(&decoration->buttons[MAXIMIZE_BUTTON][state + STATE_TOGGLED])))
             {
-                return &screen_info->buttons[MAXIMIZE_BUTTON][state + STATE_TOGGLED];
+                return &decoration->buttons[MAXIMIZE_BUTTON][state + STATE_TOGGLED];
             }
-            return &screen_info->buttons[MAXIMIZE_BUTTON][state];
+            return &decoration->buttons[MAXIMIZE_BUTTON][state];
             break;
         default:
             break;
     }
-    return &screen_info->buttons[button][state];
+    return &decoration->buttons[button][state];
 }
 
 int

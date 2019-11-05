@@ -44,6 +44,7 @@
 #include <gdk/gdkx.h>
 #include <cairo/cairo-xlib.h>
 #include <libxfce4util/libxfce4util.h>
+#include <gtk/gtk.h>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -516,7 +517,7 @@ file_buffer (enum buf_op op, gpointer handle)
 
 /* This function does all the work. */
 static GdkPixbuf *
-pixbuf_create_from_xpm (gpointer handle, xfwmColorSymbol *color_sym)
+pixbuf_create_from_xpm (gpointer handle, xfwmColorSymbol *color_sym, gboolean override, gdouble override_h, gdouble override_s, gdouble override_v)
 {
     gchar pixel_str[32];
     const gchar *buffer;
@@ -606,6 +607,18 @@ pixbuf_create_from_xpm (gpointer handle, xfwmColorSymbol *color_sym)
             color->red = 0;
             color->green = 0;
             color->blue = 0;
+        } else if (override) {
+            gdouble h, s, v, new_r, new_g, new_b;
+            /* override color - for Qubes labels */
+            gtk_rgb_to_hsv(
+                    1.0*color->red/0xFFFF,
+                    1.0*color->green/0xFFFF,
+                    1.0*color->blue/0xFFFF,
+                    &h, &s, &v);
+            gtk_hsv_to_rgb(override_h, override_s, v, &new_r, &new_g, &new_b);
+            color->red = new_r*0xFFFF;
+            color->green = new_g*0xFFFF;
+            color->blue = new_b*0xFFFF;
         }
 
         g_free (color_name);
@@ -677,7 +690,8 @@ pixbuf_create_from_xpm (gpointer handle, xfwmColorSymbol *color_sym)
 
 
 static GdkPixbuf *
-xpm_image_load (const char *filename, xfwmColorSymbol *color_sym)
+xpm_image_load (const char *filename, xfwmColorSymbol *color_sym,
+        gboolean override, gdouble override_h, gdouble override_s, gdouble override_v)
 {
     guchar buffer[1024];
     GdkPixbuf *pixbuf;
@@ -703,7 +717,8 @@ xpm_image_load (const char *filename, xfwmColorSymbol *color_sym)
     fseek (f, 0, SEEK_SET);
     memset (&h, 0, sizeof (h));
     h.infile = f;
-    pixbuf = pixbuf_create_from_xpm (&h, color_sym);
+    pixbuf = pixbuf_create_from_xpm (&h, color_sym, override,
+            override_h, override_s, override_v);
     g_free (h.buffer);
     fclose (f);
 
@@ -949,7 +964,7 @@ xfwmPixmapRenderGdkPixbuf (xfwmPixmap * pm, GdkPixbuf *pixbuf)
 }
 
 gboolean
-xfwmPixmapLoad (ScreenInfo * screen_info, xfwmPixmap * pm, const gchar * dir, const gchar * file, xfwmColorSymbol * cs)
+xfwmPixmapLoad (ScreenInfo * screen_info, xfwmPixmap * pm, const gchar * dir, const gchar * file, xfwmColorSymbol * cs, guint label_color)
 {
     gchar *filename;
     gchar *filexpm;
@@ -969,7 +984,17 @@ xfwmPixmapLoad (ScreenInfo * screen_info, xfwmPixmap * pm, const gchar * dir, co
     filexpm = g_strdup_printf ("%s.%s", file, "xpm");
     filename = g_build_filename (dir, filexpm, NULL);
     g_free (filexpm);
-    pixbuf = xpm_image_load (filename, cs);
+    if (label_color != 0xFFFFFFFF) {
+        gdouble h, s, v;
+        gtk_rgb_to_hsv(
+                1.0*((label_color & 0xFF0000) >> 16)/0xFF,
+                1.0*((label_color & 0x00FF00) >>  8)/0xFF,
+                1.0*((label_color & 0x0000FF) >>  0)/0xFF,
+                &h, &s, &v);
+        pixbuf = xpm_image_load (filename, cs, TRUE, h, s, v);
+    } else {
+        pixbuf = xpm_image_load (filename, cs, FALSE, 0, 0, 0);
+    }
     g_free (filename);
 
     /* Compose with other image formats, if any available. */

@@ -170,7 +170,7 @@ myScreenInit (DisplayInfo *display_info, GdkScreen *gscr, unsigned long event_ma
     GdkWindow *event_win;
     PangoLayout *layout;
     long desktop_visible;
-    int i, j;
+    int i, j, k;
 
     g_return_val_if_fail (display_info, NULL);
     g_return_val_if_fail (GDK_IS_SCREEN (gscr), NULL);
@@ -308,30 +308,8 @@ myScreenInit (DisplayInfo *display_info, GdkScreen *gscr, unsigned long event_ma
     screen_info->font_desc = NULL;
     screen_info->box_gc = None;
 
-    for (i = 0; i < SIDE_COUNT; i++)
-    {
-        xfwmPixmapInit (screen_info, &screen_info->sides[i][ACTIVE]);
-        xfwmPixmapInit (screen_info, &screen_info->sides[i][INACTIVE]);
-    }
-    for (i = 0; i < CORNER_COUNT; i++)
-    {
-        xfwmPixmapInit (screen_info, &screen_info->corners[i][ACTIVE]);
-        xfwmPixmapInit (screen_info, &screen_info->corners[i][INACTIVE]);
-    }
-    for (i = 0; i < BUTTON_COUNT; i++)
-    {
-        for (j = 0; j < STATE_COUNT; j++)
-        {
-            xfwmPixmapInit (screen_info, &screen_info->buttons[i][j]);
-        }
-    }
-    for (i = 0; i < TITLE_COUNT; i++)
-    {
-        xfwmPixmapInit (screen_info, &screen_info->title[i][ACTIVE]);
-        xfwmPixmapInit (screen_info, &screen_info->title[i][INACTIVE]);
-        xfwmPixmapInit (screen_info, &screen_info->top[i][ACTIVE]);
-        xfwmPixmapInit (screen_info, &screen_info->top[i][INACTIVE]);
-    }
+    screen_info->decoration = g_hash_table_new_full(NULL, NULL,
+            NULL, (GDestroyNotify)unloadSingleDecoration);
 
     screen_info->monitors_index = NULL;
     myScreenInvalidateMonitorCache (screen_info);
