@@ -62,7 +62,8 @@ gboolean                 xfwmPixmapLoad                         (ScreenInfo *,
                                                                  xfwmPixmap *,
                                                                  const gchar *,
                                                                  const gchar *,
-                                                                 xfwmColorSymbol *);
+                                                                 xfwmColorSymbol *,
+                                                                 guint label_color);
 void                     xfwmPixmapCreate                       (ScreenInfo *,
                                                                  xfwmPixmap *,
                                                                  gint,

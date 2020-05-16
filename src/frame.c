@@ -48,51 +48,61 @@ typedef struct
 int
 frameDecorationLeft (ScreenInfo *screen_info)
 {
+    Decoration *decoration;
     TRACE ("entering");
 
     g_return_val_if_fail (screen_info != NULL, 0);
-    return screen_info->sides[SIDE_LEFT][ACTIVE].width;
+    decoration = getDecorationForColor(screen_info, QUBES_LABEL_DOM0);
+    return decoration->sides[SIDE_LEFT][ACTIVE].width;
 }
 
 int
 frameDecorationRight (ScreenInfo *screen_info)
 {
+    Decoration *decoration;
     TRACE ("entering");
 
     g_return_val_if_fail (screen_info != NULL, 0);
-    return screen_info->sides[SIDE_RIGHT][ACTIVE].width;
+    decoration = getDecorationForColor(screen_info, QUBES_LABEL_DOM0);
+    return decoration->sides[SIDE_RIGHT][ACTIVE].width;
 }
 
 int
 frameDecorationTop (ScreenInfo *screen_info)
 {
+    Decoration *decoration;
     TRACE ("entering");
 
     g_return_val_if_fail (screen_info != NULL, 0);
-    return screen_info->title[TITLE_3][ACTIVE].height;
+    decoration = getDecorationForColor(screen_info, QUBES_LABEL_DOM0);
+    return decoration->title[TITLE_3][ACTIVE].height;
 }
 
 int
 frameDecorationBottom (ScreenInfo *screen_info)
 {
+    Decoration *decoration;
     TRACE ("entering");
 
     g_return_val_if_fail (screen_info != NULL, 0);
-    return screen_info->sides[SIDE_BOTTOM][ACTIVE].height;
+    decoration = getDecorationForColor(screen_info, QUBES_LABEL_DOM0);
+    return decoration->sides[SIDE_BOTTOM][ACTIVE].height;
 }
 
 int
 frameLeft (Client * c)
 {
+    Decoration *decoration;
     g_return_val_if_fail (c != NULL, 0);
     TRACE ("client \"%s\" (0x%lx)", c->name, c->window);
 
+    decoration = getDecorationForColor(c->screen_info, c->qubes_label_color);
     if (FLAG_TEST (c->xfwm_flags, XFWM_FLAG_HAS_BORDER)
         && !FLAG_TEST (c->flags, CLIENT_FLAG_FULLSCREEN)
         && (!FLAG_TEST_ALL (c->flags, CLIENT_FLAG_MAXIMIZED)
             || !(c->screen_info->params->borderless_maximize)))
     {
-        return c->screen_info->sides[SIDE_LEFT][ACTIVE].width;
+        return decoration->sides[SIDE_LEFT][ACTIVE].width;
     }
     return 0;
 }
@@ -100,15 +110,17 @@ frameLeft (Client * c)
 int
 frameRight (Client * c)
 {
+    Decoration *decoration;
     g_return_val_if_fail (c != NULL, 0);
     TRACE ("client \"%s\" (0x%lx)", c->name, c->window);
 
+    decoration = getDecorationForColor(c->screen_info, c->qubes_label_color);
     if (FLAG_TEST (c->xfwm_flags, XFWM_FLAG_HAS_BORDER)
         && !FLAG_TEST (c->flags, CLIENT_FLAG_FULLSCREEN)
         && (!FLAG_TEST_ALL (c->flags, CLIENT_FLAG_MAXIMIZED)
             || !(c->screen_info->params->borderless_maximize)))
     {
-        return c->screen_info->sides[SIDE_RIGHT][ACTIVE].width;
+        return decoration->sides[SIDE_RIGHT][ACTIVE].width;
     }
     return 0;
 }
@@ -116,12 +128,14 @@ frameRight (Client * c)
 int
 frameTop (Client * c)
 {
+    Decoration *decoration;
     g_return_val_if_fail (c != NULL, 0);
     TRACE ("client \"%s\" (0x%lx)", c->name, c->window);
 
+    decoration = getDecorationForColor(c->screen_info, c->qubes_label_color);
     if (CLIENT_HAS_FRAME (c))
     {
-        return c->screen_info->title[TITLE_3][ACTIVE].height;
+        return decoration->title[TITLE_3][ACTIVE].height;
     }
     return 0;
 }
@@ -129,15 +143,17 @@ frameTop (Client * c)
 int
 frameBottom (Client * c)
 {
+    Decoration *decoration;
     g_return_val_if_fail (c != NULL, 0);
     TRACE ("client \"%s\" (0x%lx)", c->name, c->window);
 
+    decoration = getDecorationForColor(c->screen_info, c->qubes_label_color);
     if (FLAG_TEST (c->xfwm_flags, XFWM_FLAG_HAS_BORDER)
         && !FLAG_TEST (c->flags, CLIENT_FLAG_FULLSCREEN)
         && (!FLAG_TEST_ALL (c->flags, CLIENT_FLAG_MAXIMIZED)
             || !(c->screen_info->params->borderless_maximize)))
     {
-        return c->screen_info->sides[SIDE_BOTTOM][ACTIVE].height;
+        return decoration->sides[SIDE_BOTTOM][ACTIVE].height;
     }
     return 0;
 }
@@ -317,30 +333,34 @@ frameExtentHeight (Client * c)
 static int
 frameTopLeftWidth (Client * c, int state)
 {
+    Decoration *decoration;
     g_return_val_if_fail (c != NULL, 0);
     TRACE ("client \"%s\" (0x%lx)", c->name, c->window);
 
+    decoration = getDecorationForColor(c->screen_info, c->qubes_label_color);
     if (FLAG_TEST_ALL (c->flags, CLIENT_FLAG_MAXIMIZED)
         && c->screen_info->params->borderless_maximize)
     {
         return 0;
     }
-    return c->screen_info->corners[CORNER_TOP_LEFT][state].width;
+    return decoration->corners[CORNER_TOP_LEFT][state].width;
 
 }
 
 static int
 frameTopRightWidth (Client * c, int state)
 {
+    Decoration *decoration;
     g_return_val_if_fail (c != NULL, 0);
     TRACE ("client \"%s\" (0x%lx)", c->name, c->window);
 
+    decoration = getDecorationForColor(c->screen_info, c->qubes_label_color);
     if (FLAG_TEST_ALL (c->flags, CLIENT_FLAG_MAXIMIZED)
         && c->screen_info->params->borderless_maximize)
     {
         return 0;
     }
-    return c->screen_info->corners[CORNER_TOP_RIGHT][state].width;
+    return decoration->corners[CORNER_TOP_RIGHT][state].width;
 }
 
 static int
@@ -361,6 +381,7 @@ static void
 frameFillTitlePixmap (Client * c, int state, int part, int x, int w, int h, xfwmPixmap * title_pm, xfwmPixmap * top_pm)
 {
     ScreenInfo *screen_info;
+    Decoration *decoration;
 
     g_return_if_fail (c);
     g_return_if_fail (title_pm);
@@ -368,22 +389,24 @@ frameFillTitlePixmap (Client * c, int state, int part, int x, int w, int h, xfwm
     TRACE ("client \"%s\" (0x%lx)", c->name, c->window);
 
     screen_info = c->screen_info;
+    decoration = getDecorationForColor(screen_info, c->qubes_label_color);
 
-    if (!xfwmPixmapNone(&screen_info->top[part][state]))
+    if (!xfwmPixmapNone(&decoration->top[part][state]))
     {
-        xfwmPixmapFill (&screen_info->top[part][state], top_pm, x, 0, w, h);
+        xfwmPixmapFill (&decoration->top[part][state], top_pm, x, 0, w, h);
     }
     else
     {
-        xfwmPixmapFill (&screen_info->title[part][state], top_pm, x, 0, w, h);
+        xfwmPixmapFill (&decoration->title[part][state], top_pm, x, 0, w, h);
     }
-    xfwmPixmapFill (&screen_info->title[part][state], title_pm, x, 0, w, frameTop (c));
+    xfwmPixmapFill (&decoration->title[part][state], title_pm, x, 0, w, frameTop (c));
 }
 
 static void
 frameCreateTitlePixmap (Client * c, int state, int left, int right, xfwmPixmap * title_pm, xfwmPixmap * top_pm)
 {
     ScreenInfo *screen_info;
+    Decoration *decoration;
     cairo_surface_t *surface;
     cairo_t *cr;
     PangoLayout *layout;
@@ -398,6 +421,7 @@ frameCreateTitlePixmap (Client * c, int state, int left, int right, xfwmPixmap *
     TRACE ("client \"%s\" (0x%lx)", c->name, c->window);
 
     screen_info = c->screen_info;
+    decoration = getDecorationForColor(screen_info, c->qubes_label_color);
 
     if (left > right)
     {
@@ -459,9 +483,9 @@ frameCreateTitlePixmap (Client * c, int state, int left, int right, xfwmPixmap *
         title_y = MAX (0, frameTop (c) - title_height);
     }
 
-    if (!xfwmPixmapNone(&screen_info->top[3][ACTIVE]))
+    if (!xfwmPixmapNone(&decoration->top[3][ACTIVE]))
     {
-        top_height = screen_info->top[3][ACTIVE].height;
+        top_height = decoration->top[3][ACTIVE].height;
     }
     else
     {
@@ -473,8 +497,8 @@ frameCreateTitlePixmap (Client * c, int state, int left, int right, xfwmPixmap *
     }
 
     w1 = 0;
-    w2 = screen_info->title[TITLE_2][state].width;
-    w4 = screen_info->title[TITLE_4][state].width;
+    w2 = decoration->title[TITLE_2][state].width;
+    w4 = decoration->title[TITLE_4][state].width;
 
     if (screen_info->params->full_width_title)
     {
@@ -702,6 +726,7 @@ static void
 frameSetShape (Client * c, int state, FramePixmap * frame_pix, int button_x[BUTTON_COUNT])
 {
     ScreenInfo *screen_info;
+    Decoration *decoration;
     DisplayInfo *display_info;
     XRectangle rect;
     xfwmPixmap *my_pixmap;
@@ -711,6 +736,7 @@ frameSetShape (Client * c, int state, FramePixmap * frame_pix, int button_x[BUTT
     TRACE ("client \"%s\" (0x%lx)", c->name, c->window);
 
     screen_info = c->screen_info;
+    decoration = getDecorationForColor(screen_info, c->qubes_label_color);
     display_info = screen_info->display_info;
 
     if (!display_info->have_shape)
@@ -782,25 +808,25 @@ frameSetShape (Client * c, int state, FramePixmap * frame_pix, int button_x[BUTT
         if (xfwmWindowVisible (&c->corners[CORNER_BOTTOM_LEFT]))
         {
             XShapeCombineMask (display_info->dpy, MYWINDOW_XWINDOW (c->corners[CORNER_BOTTOM_LEFT]),
-                               ShapeBounding, 0, 0, screen_info->corners[CORNER_BOTTOM_LEFT][state].mask, ShapeSet);
+                               ShapeBounding, 0, 0, decoration->corners[CORNER_BOTTOM_LEFT][state].mask, ShapeSet);
         }
 
         if (xfwmWindowVisible (&c->corners[CORNER_BOTTOM_RIGHT]))
         {
             XShapeCombineMask (display_info->dpy, MYWINDOW_XWINDOW (c->corners[CORNER_BOTTOM_RIGHT]),
-                               ShapeBounding, 0, 0, screen_info->corners[CORNER_BOTTOM_RIGHT][state].mask, ShapeSet);
+                               ShapeBounding, 0, 0, decoration->corners[CORNER_BOTTOM_RIGHT][state].mask, ShapeSet);
         }
 
         if (xfwmWindowVisible (&c->corners[CORNER_TOP_LEFT]))
         {
             XShapeCombineMask (display_info->dpy, MYWINDOW_XWINDOW (c->corners[CORNER_TOP_LEFT]),
-                               ShapeBounding, 0, 0, screen_info->corners[CORNER_TOP_LEFT][state].mask, ShapeSet);
+                               ShapeBounding, 0, 0, decoration->corners[CORNER_TOP_LEFT][state].mask, ShapeSet);
         }
 
         if (xfwmWindowVisible (&c->corners[CORNER_TOP_RIGHT]))
         {
             XShapeCombineMask (display_info->dpy, MYWINDOW_XWINDOW (c->corners[CORNER_TOP_RIGHT]),
-                               ShapeBounding, 0, 0, screen_info->corners[CORNER_TOP_RIGHT][state].mask, ShapeSet);
+                               ShapeBounding, 0, 0, decoration->corners[CORNER_TOP_RIGHT][state].mask, ShapeSet);
         }
 
         for (i = 0; i < BUTTON_COUNT; i++)
@@ -814,48 +840,48 @@ frameSetShape (Client * c, int state, FramePixmap * frame_pix, int button_x[BUTT
         }
 
         if (xfwmWindowVisible (&c->corners[CORNER_TOP_LEFT]) &&
-            (screen_info->corners[CORNER_TOP_LEFT][state].height > frameHeight (c) - frameBottom (c) + 1))
+            (decoration->corners[CORNER_TOP_LEFT][state].height > frameHeight (c) - frameBottom (c) + 1))
         {
             rect.x      = 0;
             rect.y      = frameHeight (c) - frameBottom (c) + 1;
             rect.width  = frameTopLeftWidth (c, state);
-            rect.height = screen_info->corners[CORNER_TOP_LEFT][state].height
+            rect.height = decoration->corners[CORNER_TOP_LEFT][state].height
                            - (frameHeight (c) - frameBottom (c) + 1);
             XShapeCombineRectangles (display_info->dpy, MYWINDOW_XWINDOW (c->corners[CORNER_TOP_LEFT]),
                                      ShapeBounding, 0, 0, &rect, 1, ShapeSubtract, 0);
         }
 
         if (xfwmWindowVisible (&c->corners[CORNER_TOP_RIGHT]) &&
-            (screen_info->corners[CORNER_TOP_RIGHT][state].height > frameHeight (c) - frameBottom (c) + 1))
+            (decoration->corners[CORNER_TOP_RIGHT][state].height > frameHeight (c) - frameBottom (c) + 1))
         {
             rect.x      = 0;
             rect.y      = frameHeight (c) - frameBottom (c) + 1;
             rect.width  = frameTopRightWidth (c, state);
-            rect.height = screen_info->corners[CORNER_TOP_RIGHT][state].height
+            rect.height = decoration->corners[CORNER_TOP_RIGHT][state].height
                            - (frameHeight (c) - frameBottom (c) + 1);
             XShapeCombineRectangles (display_info->dpy, MYWINDOW_XWINDOW (c->corners[CORNER_TOP_RIGHT]),
                                      ShapeBounding, 0, 0, &rect, 1, ShapeSubtract, 0);
         }
 
         if (xfwmWindowVisible (&c->corners[CORNER_BOTTOM_LEFT]) &&
-            (screen_info->corners[CORNER_BOTTOM_LEFT][state].height > frameHeight (c) - frameTop (c) + 1))
+            (decoration->corners[CORNER_BOTTOM_LEFT][state].height > frameHeight (c) - frameTop (c) + 1))
         {
             rect.x      = 0;
             rect.y      = 0;
-            rect.width  = screen_info->corners[CORNER_BOTTOM_LEFT][state].width;
-            rect.height = screen_info->corners[CORNER_BOTTOM_LEFT][state].height
+            rect.width  = decoration->corners[CORNER_BOTTOM_LEFT][state].width;
+            rect.height = decoration->corners[CORNER_BOTTOM_LEFT][state].height
                            - (frameHeight (c) - frameTop (c) + 1);
             XShapeCombineRectangles (display_info->dpy, MYWINDOW_XWINDOW (c->corners[CORNER_BOTTOM_LEFT]),
                                      ShapeBounding, 0, 0, &rect, 1, ShapeSubtract, 0);
         }
 
         if (xfwmWindowVisible (&c->corners[CORNER_BOTTOM_RIGHT]) &&
-            (screen_info->corners[CORNER_BOTTOM_RIGHT][state].height > frameHeight (c) - frameTop (c) + 1))
+            (decoration->corners[CORNER_BOTTOM_RIGHT][state].height > frameHeight (c) - frameTop (c) + 1))
         {
             rect.x      = 0;
             rect.y      = 0;
-            rect.width  = screen_info->corners[CORNER_BOTTOM_RIGHT][state].width;
-            rect.height = screen_info->corners[CORNER_BOTTOM_RIGHT][state].height
+            rect.width  = decoration->corners[CORNER_BOTTOM_RIGHT][state].width;
+            rect.height = decoration->corners[CORNER_BOTTOM_RIGHT][state].height
                            - (frameHeight (c) - frameTop (c) + 1);
             XShapeCombineRectangles (display_info->dpy, MYWINDOW_XWINDOW (c->corners[CORNER_BOTTOM_RIGHT]),
                                      ShapeBounding, 0, 0, &rect, 1, ShapeSubtract, 0);
@@ -893,7 +919,7 @@ frameSetShape (Client * c, int state, FramePixmap * frame_pix, int button_x[BUTT
         if (xfwmWindowVisible (&c->sides[SIDE_BOTTOM]))
         {
             XShapeCombineShape (display_info->dpy, screen_info->shape_win, ShapeBounding,
-                                screen_info->corners[CORNER_BOTTOM_LEFT][state].width,
+                                decoration->corners[CORNER_BOTTOM_LEFT][state].width,
                                 frameHeight (c) - frameBottom (c),
                                 MYWINDOW_XWINDOW (c->sides[SIDE_BOTTOM]), ShapeBounding, ShapeUnion);
         }
@@ -901,7 +927,7 @@ frameSetShape (Client * c, int state, FramePixmap * frame_pix, int button_x[BUTT
         if (xfwmWindowVisible (&c->sides[SIDE_TOP]))
         {
             XShapeCombineShape (display_info->dpy, screen_info->shape_win, ShapeBounding,
-                                screen_info->corners[CORNER_BOTTOM_LEFT][state].width,
+                                decoration->corners[CORNER_BOTTOM_LEFT][state].width,
                                 frameTop (c) - frameBottom (c),
                                 MYWINDOW_XWINDOW (c->sides[SIDE_TOP]), ShapeBounding, ShapeUnion);
         }
@@ -909,15 +935,15 @@ frameSetShape (Client * c, int state, FramePixmap * frame_pix, int button_x[BUTT
         if (xfwmWindowVisible (&c->corners[CORNER_BOTTOM_LEFT]))
         {
             XShapeCombineShape (display_info->dpy, screen_info->shape_win, ShapeBounding, 0,
-                                frameHeight (c) - screen_info->corners[CORNER_BOTTOM_LEFT][state].height,
+                                frameHeight (c) - decoration->corners[CORNER_BOTTOM_LEFT][state].height,
                                 MYWINDOW_XWINDOW (c->corners[CORNER_BOTTOM_LEFT]), ShapeBounding, ShapeUnion);
         }
 
         if (xfwmWindowVisible (&c->corners[CORNER_BOTTOM_RIGHT]))
         {
             XShapeCombineShape (display_info->dpy, screen_info->shape_win, ShapeBounding,
-                                frameWidth (c) - screen_info->corners[CORNER_BOTTOM_RIGHT][state].width,
-                                frameHeight (c) - screen_info->corners[CORNER_BOTTOM_RIGHT][state].height,
+                                frameWidth (c) - decoration->corners[CORNER_BOTTOM_RIGHT][state].width,
+                                frameHeight (c) - decoration->corners[CORNER_BOTTOM_RIGHT][state].height,
                                 MYWINDOW_XWINDOW (c->corners[CORNER_BOTTOM_RIGHT]), ShapeBounding, ShapeUnion);
         }
 
@@ -933,7 +959,7 @@ frameSetShape (Client * c, int state, FramePixmap * frame_pix, int button_x[BUTT
             if (xfwmWindowVisible (&c->buttons[i]))
             {
                 XShapeCombineShape (display_info->dpy, screen_info->shape_win, ShapeBounding, button_x[i],
-                                    (frameTop (c) - screen_info->buttons[i][state].height + 1) / 2,
+                                    (frameTop (c) - decoration->buttons[i][state].height + 1) / 2,
                                     MYWINDOW_XWINDOW (c->buttons[i]), ShapeBounding, ShapeUnion);
             }
         }
@@ -983,6 +1009,7 @@ static void
 frameDrawWin (Client * c)
 {
     ScreenInfo *screen_info;
+    Decoration *decoration;
     FramePixmap frame_pix;
     xfwmPixmap *my_pixmap;
     gint state, x, button, left, right;
@@ -999,6 +1026,7 @@ frameDrawWin (Client * c)
     frameClearQueueDraw (c);
 
     screen_info = c->screen_info;
+    decoration = getDecorationForColor(screen_info, c->qubes_label_color);
     requires_clearing = FALSE;
     width_changed = FALSE;
     height_changed = FALSE;
@@ -1090,7 +1118,7 @@ frameDrawWin (Client * c)
             }
             else if (button >= 0)
             {
-                if (x + screen_info->buttons[button][state].width + screen_info->params->button_spacing < right)
+                if (x + decoration->buttons[button][state].width + screen_info->params->button_spacing < right)
                 {
                     my_pixmap = clientGetButtonPixmap (c, button, clientGetButtonState (c, button, state));
                     if (!xfwmPixmapNone(my_pixmap))
@@ -1098,11 +1126,11 @@ frameDrawWin (Client * c)
                         xfwmWindowSetBG (&c->buttons[button], my_pixmap);
                     }
                     xfwmWindowShow (&c->buttons[button], x,
-                        (frameTop (c) - screen_info->buttons[button][state].height + 1) / 2,
-                        screen_info->buttons[button][state].width,
-                        screen_info->buttons[button][state].height, TRUE);
+                        (frameTop (c) - decoration->buttons[button][state].height + 1) / 2,
+                        decoration->buttons[button][state].width,
+                        decoration->buttons[button][state].height, TRUE);
                     button_x[button] = x;
-                    x = x + screen_info->buttons[button][state].width +
+                    x = x + decoration->buttons[button][state].width +
                         screen_info->params->button_spacing;
                 }
                 else
@@ -1125,19 +1153,19 @@ frameDrawWin (Client * c)
             }
             else if (button >= 0)
             {
-                if (x - screen_info->buttons[button][state].width - screen_info->params->button_spacing > left)
+                if (x - decoration->buttons[button][state].width - screen_info->params->button_spacing > left)
                 {
                     my_pixmap = clientGetButtonPixmap (c, button, clientGetButtonState (c, button, state));
                     if (!xfwmPixmapNone(my_pixmap))
                     {
                         xfwmWindowSetBG (&c->buttons[button], my_pixmap);
                     }
-                    x = x - screen_info->buttons[button][state].width -
+                    x = x - decoration->buttons[button][state].width -
                         screen_info->params->button_spacing;
                     xfwmWindowShow (&c->buttons[button], x,
-                        (frameTop (c) - screen_info->buttons[button][state].height + 1) / 2,
-                        screen_info->buttons[button][state].width,
-                        screen_info->buttons[button][state].height, TRUE);
+                        (frameTop (c) - decoration->buttons[button][state].height + 1) / 2,
+                        decoration->buttons[button][state].width,
+                        decoration->buttons[button][state].height, TRUE);
                     button_x[button] = x;
                 }
                 else
@@ -1151,12 +1179,12 @@ frameDrawWin (Client * c)
 
         top_width = frameWidth (c) - frameTopLeftWidth (c, state) - frameTopRightWidth (c, state);
         bottom_width = frameWidth (c) -
-            screen_info->corners[CORNER_BOTTOM_LEFT][state].width -
-            screen_info->corners[CORNER_BOTTOM_RIGHT][state].width;
+            decoration->corners[CORNER_BOTTOM_LEFT][state].width -
+            decoration->corners[CORNER_BOTTOM_RIGHT][state].width;
         left_height = frameHeight (c) - frameTop (c) -
-            screen_info->corners[CORNER_BOTTOM_LEFT][state].height;
+            decoration->corners[CORNER_BOTTOM_LEFT][state].height;
         right_height = frameHeight (c) - frameTop (c) -
-            screen_info->corners[CORNER_BOTTOM_RIGHT][state].height;
+            decoration->corners[CORNER_BOTTOM_RIGHT][state].height;
 
         xfwmPixmapInit (screen_info, &frame_pix.pm_title);
         xfwmPixmapInit (screen_info, &frame_pix.pm_sides[SIDE_TOP]);
@@ -1175,13 +1203,13 @@ frameDrawWin (Client * c)
         if (requires_clearing)
         {
             xfwmWindowSetBG (&c->corners[CORNER_TOP_LEFT],
-                &screen_info->corners[CORNER_TOP_LEFT][state]);
+                &decoration->corners[CORNER_TOP_LEFT][state]);
             xfwmWindowSetBG (&c->corners[CORNER_TOP_RIGHT],
-                &screen_info->corners[CORNER_TOP_RIGHT][state]);
+                &decoration->corners[CORNER_TOP_RIGHT][state]);
             xfwmWindowSetBG (&c->corners[CORNER_BOTTOM_LEFT],
-                &screen_info->corners[CORNER_BOTTOM_LEFT][state]);
+                &decoration->corners[CORNER_BOTTOM_LEFT][state]);
             xfwmWindowSetBG (&c->corners[CORNER_BOTTOM_RIGHT],
-                &screen_info->corners[CORNER_BOTTOM_RIGHT][state]);
+                &decoration->corners[CORNER_BOTTOM_RIGHT][state]);
         }
 
         if (FLAG_TEST_ALL (c->flags, CLIENT_FLAG_MAXIMIZED)
@@ -1207,7 +1235,7 @@ frameDrawWin (Client * c)
             {
                 xfwmPixmapCreate (screen_info, &frame_pix.pm_sides[SIDE_LEFT],
                     frameLeft (c), left_height);
-                xfwmPixmapFill (&screen_info->sides[SIDE_LEFT][state],
+                xfwmPixmapFill (&decoration->sides[SIDE_LEFT][state],
                     &frame_pix.pm_sides[SIDE_LEFT],
                     0, 0, frameLeft (c), left_height);
                 xfwmWindowSetBG (&c->sides[SIDE_LEFT],
@@ -1217,7 +1245,7 @@ frameDrawWin (Client * c)
 
                 xfwmPixmapCreate (screen_info, &frame_pix.pm_sides[SIDE_RIGHT],
                     frameRight (c), right_height);
-                xfwmPixmapFill (&screen_info->sides[SIDE_RIGHT][state],
+                xfwmPixmapFill (&decoration->sides[SIDE_RIGHT][state],
                     &frame_pix.pm_sides[SIDE_RIGHT],
                     0, 0, frameRight (c), right_height);
                 xfwmWindowSetBG (&c->sides[SIDE_RIGHT],
@@ -1229,13 +1257,13 @@ frameDrawWin (Client * c)
 
             xfwmPixmapCreate (screen_info, &frame_pix.pm_sides[SIDE_BOTTOM],
                 bottom_width, frameBottom (c));
-            xfwmPixmapFill (&screen_info->sides[SIDE_BOTTOM][state],
+            xfwmPixmapFill (&decoration->sides[SIDE_BOTTOM][state],
                 &frame_pix.pm_sides[SIDE_BOTTOM],
                 0, 0, bottom_width, frameBottom (c));
             xfwmWindowSetBG (&c->sides[SIDE_BOTTOM],
                 &frame_pix.pm_sides[SIDE_BOTTOM]);
             xfwmWindowShow (&c->sides[SIDE_BOTTOM],
-                screen_info->corners[CORNER_BOTTOM_LEFT][state].width,
+                decoration->corners[CORNER_BOTTOM_LEFT][state].width,
                 frameHeight (c) - frameBottom (c), bottom_width, frameBottom (c),
                 (requires_clearing | width_changed));
 
@@ -1243,7 +1271,7 @@ frameDrawWin (Client * c)
             {
                 xfwmWindowSetBG (&c->sides[SIDE_TOP], &frame_pix.pm_sides[SIDE_TOP]);
                 xfwmWindowShow (&c->sides[SIDE_TOP],
-                    screen_info->corners[CORNER_TOP_LEFT][state].width,
+                    decoration->corners[CORNER_TOP_LEFT][state].width,
                     0, top_width, frame_pix.pm_sides[SIDE_TOP].height,
                     (requires_clearing | width_changed));
             }
@@ -1254,29 +1282,29 @@ frameDrawWin (Client * c)
 
             xfwmWindowShow (&c->corners[CORNER_TOP_LEFT], 0, 0,
                 frameTopLeftWidth (c, state),
-                screen_info->corners[CORNER_TOP_LEFT][state].height,
+                decoration->corners[CORNER_TOP_LEFT][state].height,
                 requires_clearing);
 
             xfwmWindowShow (&c->corners[CORNER_TOP_RIGHT],
                 frameWidth (c) - frameTopRightWidth (c, state),
                 0, frameTopRightWidth (c, state),
-                screen_info->corners[CORNER_TOP_RIGHT][state].height,
+                decoration->corners[CORNER_TOP_RIGHT][state].height,
                 requires_clearing);
 
             xfwmWindowShow (&c->corners[CORNER_BOTTOM_LEFT], 0,
                 frameHeight (c) -
-                screen_info->corners[CORNER_BOTTOM_LEFT][state].height,
-                screen_info->corners[CORNER_BOTTOM_LEFT][state].width,
-                screen_info->corners[CORNER_BOTTOM_LEFT][state].height,
+                decoration->corners[CORNER_BOTTOM_LEFT][state].height,
+                decoration->corners[CORNER_BOTTOM_LEFT][state].width,
+                decoration->corners[CORNER_BOTTOM_LEFT][state].height,
                 requires_clearing);
 
             xfwmWindowShow (&c->corners[CORNER_BOTTOM_RIGHT],
                 frameWidth (c) -
-                screen_info->corners[CORNER_BOTTOM_RIGHT][state].width,
+                decoration->corners[CORNER_BOTTOM_RIGHT][state].width,
                 frameHeight (c) -
-                screen_info->corners[CORNER_BOTTOM_RIGHT][state].height,
-                screen_info->corners[CORNER_BOTTOM_RIGHT][state].width,
-                screen_info->corners[CORNER_BOTTOM_RIGHT][state].height,
+                decoration->corners[CORNER_BOTTOM_RIGHT][state].height,
+                decoration->corners[CORNER_BOTTOM_RIGHT][state].width,
+                decoration->corners[CORNER_BOTTOM_RIGHT][state].height,
                 requires_clearing);
         }
         frameSetShape (c, state, &frame_pix, button_x);

@@ -332,6 +332,8 @@ struct _Client
     gint struts[STRUTS_SIZE];
     gchar *hostname;
     gchar *name;
+    gchar *qubes_vmname;
+    guint qubes_label_color;
     guint32 user_time;
     GPid pid;
     guint32 ping_time;

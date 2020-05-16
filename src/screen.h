@@ -62,6 +62,8 @@
                                  HyperMask)
 
 
+#define XPM_COLOR_SYMBOL_SIZE   24
+
 #ifdef HAVE_COMPOSITOR
 struct _gaussian_conv {
     int     size;
@@ -69,6 +71,15 @@ struct _gaussian_conv {
 };
 typedef struct _gaussian_conv gaussian_conv;
 #endif /* HAVE_COMPOSITOR */
+
+struct _Decoration
+{
+    xfwmPixmap buttons[BUTTON_COUNT][STATE_COUNT];
+    xfwmPixmap corners[CORNER_COUNT][2];
+    xfwmPixmap sides[SIDE_COUNT][2];
+    xfwmPixmap title[TITLE_COUNT][2];
+    xfwmPixmap top[TITLE_COUNT][2];
+};
 
 struct _ScreenInfo
 {
@@ -88,11 +99,10 @@ struct _ScreenInfo
     /* Theme pixmaps and other params, per screen */
     GdkRGBA title_colors[2];
     GdkRGBA title_shadow_colors[2];
-    xfwmPixmap buttons[BUTTON_COUNT][STATE_COUNT];
-    xfwmPixmap corners[CORNER_COUNT][2];
-    xfwmPixmap sides[SIDE_COUNT][2];
-    xfwmPixmap title[TITLE_COUNT][2];
-    xfwmPixmap top[TITLE_COUNT][2];
+    GdkRGBA qubes_label_colors[MAX_QUBES_LABELS];
+    xfwmColorSymbol colsym[ XPM_COLOR_SYMBOL_SIZE + 1 ];
+    /* hash table label_color->Decoration* */
+    GHashTable *decoration;
 
     /* Per screen graphic contexts */
     GC box_gc;
