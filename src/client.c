@@ -1853,17 +1853,6 @@ clientFrame (DisplayInfo *display_info, Window w, gboolean recapture)
         FLAG_SET (c->xfwm_flags, XFWM_FLAG_OPACITY_LOCKED);
     }
 
-    /* Timout for asynchronous icon update */
-    c->icon_timeout_id = 0;
-    /* Timout for asynchronous frame update */
-    c->frame_timeout_id = 0;
-    /* Timeout for blinking on urgency */
-    c->blink_timeout_id = 0;
-    /* Ping timeout  */
-    c->ping_timeout_id = 0;
-    /* Ping timeout  */
-    c->ping_time = 0;
-
     c->class.res_name = NULL;
     c->class.res_class = NULL;
     XGetClassHint (display_info->dpy, w, &c->class);
