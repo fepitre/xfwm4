@@ -279,6 +279,7 @@ typedef struct _Client            Client;
 typedef struct _DisplayInfo       DisplayInfo;
 typedef struct _xfwmPixmap        xfwmPixmap;
 typedef struct _XfwmParams        XfwmParams;
+typedef struct _Decoration        Decoration;
 typedef struct _ScreenInfo        ScreenInfo;
 typedef struct _Settings          Settings;
 

@@ -46,7 +46,6 @@
 
 #define CHANNEL_XFWM            "xfwm4"
 #define THEMERC                 "themerc"
-#define XPM_COLOR_SYMBOL_SIZE   24
 
 #define KEYMAP_UPDATE_TIMEOUT   250 /* ms */
 static guint keymap_timeout   = 0;
@@ -285,10 +284,8 @@ getThemeName (ScreenInfo *screen_info, Settings *rc)
     return DEFAULT_HDPI_THEME;
 }
 
-static void
-loadTheme (ScreenInfo *screen_info, Settings *rc)
+Decoration *getDecorationForColor(ScreenInfo *screen_info, guint32 color)
 {
-
     static const char *side_names[] = {
         "left",
         "right",
@@ -322,6 +319,92 @@ loadTheme (ScreenInfo *screen_info, Settings *rc)
         "toggled-prelight",
         "toggled-pressed"
     };
+    Decoration *decoration;
+    gchar imagename[30];
+    gchar *theme;
+    guint i, j;
+
+    decoration = g_hash_table_lookup(screen_info->decoration, GINT_TO_POINTER(color));
+    if (decoration)
+        return decoration;
+
+    decoration = g_new(Decoration, 1);
+    theme = screen_info->params->theme;
+
+    for (i = 0; i < SIDE_COUNT; i++)
+    {
+        xfwmPixmapInit (screen_info, &decoration->sides[i][ACTIVE]);
+        xfwmPixmapInit (screen_info, &decoration->sides[i][INACTIVE]);
+    }
+    for (i = 0; i < CORNER_COUNT; i++)
+    {
+        xfwmPixmapInit (screen_info, &decoration->corners[i][ACTIVE]);
+        xfwmPixmapInit (screen_info, &decoration->corners[i][INACTIVE]);
+    }
+    for (i = 0; i < BUTTON_COUNT; i++)
+    {
+        for (j = 0; j < STATE_COUNT; j++)
+        {
+            xfwmPixmapInit (screen_info, &decoration->buttons[i][j]);
+        }
+    }
+    for (i = 0; i < TITLE_COUNT; i++)
+    {
+        xfwmPixmapInit (screen_info, &decoration->title[i][ACTIVE]);
+        xfwmPixmapInit (screen_info, &decoration->title[i][INACTIVE]);
+        xfwmPixmapInit (screen_info, &decoration->top[i][ACTIVE]);
+        xfwmPixmapInit (screen_info, &decoration->top[i][INACTIVE]);
+    }
+
+    for (i = 0; i < SIDE_COUNT; i++)
+    {
+        if (i == SIDE_TOP)
+            continue;  /* There is no top decoration per se. */
+
+        g_snprintf(imagename, sizeof (imagename), "%s-active", side_names[i]);
+        xfwmPixmapLoad (screen_info, &decoration->sides[i][ACTIVE], theme, imagename, screen_info->colsym, color);
+
+        g_snprintf(imagename, sizeof (imagename), "%s-inactive", side_names[i]);
+        xfwmPixmapLoad (screen_info, &decoration->sides[i][INACTIVE], theme, imagename, screen_info->colsym, color);
+    }
+    for (i = 0; i < CORNER_COUNT; i++)
+    {
+        g_snprintf(imagename, sizeof (imagename), "%s-active", corner_names[i]);
+        xfwmPixmapLoad (screen_info, &decoration->corners[i][ACTIVE], theme, imagename, screen_info->colsym, color);
+
+        g_snprintf(imagename, sizeof (imagename), "%s-inactive", corner_names[i]);
+        xfwmPixmapLoad (screen_info, &decoration->corners[i][INACTIVE], theme, imagename, screen_info->colsym, color);
+    }
+    for (i = 0; i < BUTTON_COUNT; i++)
+    {
+        for (j = 0; j < STATE_COUNT; j++)
+        {
+            g_snprintf(imagename, sizeof (imagename), "%s-%s", button_names[i], button_state_names[j]);
+            xfwmPixmapLoad (screen_info, &decoration->buttons[i][j], theme, imagename, screen_info->colsym, color);
+        }
+    }
+    for (i = 0; i < TITLE_COUNT; i++)
+    {
+        g_snprintf(imagename, sizeof (imagename), "title-%d-active", i + 1);
+        xfwmPixmapLoad (screen_info, &decoration->title[i][ACTIVE], theme, imagename, screen_info->colsym, color);
+
+        g_snprintf(imagename, sizeof (imagename), "title-%d-inactive", i + 1);
+        xfwmPixmapLoad (screen_info, &decoration->title[i][INACTIVE], theme, imagename, screen_info->colsym, color);
+
+        g_snprintf(imagename, sizeof (imagename), "top-%d-active", i + 1);
+        xfwmPixmapLoad (screen_info, &decoration->top[i][ACTIVE], theme, imagename, screen_info->colsym, color);
+
+        g_snprintf(imagename, sizeof (imagename), "top-%d-inactive", i + 1);
+        xfwmPixmapLoad (screen_info, &decoration->top[i][INACTIVE], theme, imagename, screen_info->colsym, color);
+    }
+
+    g_hash_table_insert(screen_info->decoration, GINT_TO_POINTER(color), decoration);
+    return decoration;
+}
+
+static void
+loadTheme (ScreenInfo *screen_info, Settings *rc)
+{
 
     static const char *ui_part[] = {
         "fg",
@@ -379,11 +462,9 @@ loadTheme (ScreenInfo *screen_info, Settings *rc)
         NULL
     };
 
-    gchar imagename[30];
     GValue tmp_val = { 0, };
     GValue tmp_val2 = { 0, };
     DisplayInfo *display_info;
-    xfwmColorSymbol colsym[ XPM_COLOR_SYMBOL_SIZE + 1 ];
     GtkWidget *widget;
     gchar *theme;
     const gchar *font;
@@ -441,11 +522,13 @@ loadTheme (ScreenInfo *screen_info, Settings *rc)
 
     for (i = 0; i < XPM_COLOR_SYMBOL_SIZE; i++)
     {
-        colsym[i].name = rc[i].option;
-        colsym[i].value = g_value_get_string(rc[i].value);
+        g_free(screen_info->colsym[i].name);
+        g_free(screen_info->colsym[i].value);
+        screen_info->colsym[i].name = g_strdup(rc[i].option);
+        screen_info->colsym[i].value = g_strdup(g_value_get_string(rc[i].value));
     }
-    colsym[XPM_COLOR_SYMBOL_SIZE].name = NULL;
-    colsym[XPM_COLOR_SYMBOL_SIZE].value = NULL;
+    screen_info->colsym[XPM_COLOR_SYMBOL_SIZE].name = NULL;
+    screen_info->colsym[XPM_COLOR_SYMBOL_SIZE].value = NULL;
 
     /* Standard double click time ... */
     display_info->double_click_time = abs (getIntValue ("double_click_time", rc));
@@ -476,48 +559,6 @@ loadTheme (ScreenInfo *screen_info, Settings *rc)
     gdk_rgba_parse (&screen_info->title_colors[INACTIVE], getStringValue ("inactive_text_color", rc));
     gdk_rgba_parse (&screen_info->title_shadow_colors[ACTIVE], getStringValue ("active_text_shadow_color", rc));
     gdk_rgba_parse (&screen_info->title_shadow_colors[INACTIVE], getStringValue ("inactive_text_shadow_color", rc));
-
-    for (i = 0; i < SIDE_COUNT; i++)
-    {
-        if (i == SIDE_TOP)
-            continue;  /* There is no top decoration per se. */
-
-        g_snprintf(imagename, sizeof (imagename), "%s-active", side_names[i]);
-        xfwmPixmapLoad (screen_info, &screen_info->sides[i][ACTIVE], theme, imagename, colsym);
-
-        g_snprintf(imagename, sizeof (imagename), "%s-inactive", side_names[i]);
-        xfwmPixmapLoad (screen_info, &screen_info->sides[i][INACTIVE], theme, imagename, colsym);
-    }
-    for (i = 0; i < CORNER_COUNT; i++)
-    {
-        g_snprintf(imagename, sizeof (imagename), "%s-active", corner_names[i]);
-        xfwmPixmapLoad (screen_info, &screen_info->corners[i][ACTIVE], theme, imagename, colsym);
-
-        g_snprintf(imagename, sizeof (imagename), "%s-inactive", corner_names[i]);
-        xfwmPixmapLoad (screen_info, &screen_info->corners[i][INACTIVE], theme, imagename, colsym);
-    }
-    for (i = 0; i < BUTTON_COUNT; i++)
-    {
-        for (j = 0; j < STATE_COUNT; j++)
-        {
-            g_snprintf(imagename, sizeof (imagename), "%s-%s", button_names[i], button_state_names[j]);
-            xfwmPixmapLoad (screen_info, &screen_info->buttons[i][j], theme, imagename, colsym);
-        }
-    }
-    for (i = 0; i < TITLE_COUNT; i++)
-    {
-        g_snprintf(imagename, sizeof (imagename), "title-%d-active", i + 1);
-        xfwmPixmapLoad (screen_info, &screen_info->title[i][ACTIVE], theme, imagename, colsym);
-
-        g_snprintf(imagename, sizeof (imagename), "title-%d-inactive", i + 1);
-        xfwmPixmapLoad (screen_info, &screen_info->title[i][INACTIVE], theme, imagename, colsym);
-
-        g_snprintf(imagename, sizeof (imagename), "top-%d-active", i + 1);
-        xfwmPixmapLoad (screen_info, &screen_info->top[i][ACTIVE], theme, imagename, colsym);
-
-        g_snprintf(imagename, sizeof (imagename), "top-%d-inactive", i + 1);
-        xfwmPixmapLoad (screen_info, &screen_info->top[i][INACTIVE], theme, imagename, colsym);
-    }
 
     screen_info->box_gc = createGC (screen_info, "#FFFFFF", GXxor, NULL, 2, TRUE);
 
@@ -551,7 +592,9 @@ loadTheme (ScreenInfo *screen_info, Settings *rc)
     screen_info->params->title_horizontal_offset =
         getIntValue ("title_horizontal_offset", rc);
 
-    g_free (theme);
+    if (screen_info->params->theme)
+        g_free (screen_info->params->theme);
+    screen_info->params->theme = theme;
 }
 
 static void
@@ -911,11 +954,42 @@ loadSettings (ScreenInfo *screen_info)
     return TRUE;
 }
 
-static void
-unloadTheme (ScreenInfo *screen_info)
+void
+unloadSingleDecoration (Decoration *decoration)
 {
     int i, j;
 
+    TRACE ("entering");
+
+    for (i = 0; i < SIDE_COUNT; i++)
+    {
+        xfwmPixmapFree (&decoration->sides[i][ACTIVE]);
+        xfwmPixmapFree (&decoration->sides[i][INACTIVE]);
+    }
+    for (i = 0; i < CORNER_COUNT; i++)
+    {
+        xfwmPixmapFree (&decoration->corners[i][ACTIVE]);
+        xfwmPixmapFree (&decoration->corners[i][INACTIVE]);
+    }
+    for (i = 0; i < BUTTON_COUNT; i++)
+    {
+        for (j = 0; j < STATE_COUNT; j++)
+        {
+            xfwmPixmapFree (&decoration->buttons[i][j]);
+        }
+    }
+    for (i = 0; i < TITLE_COUNT; i++)
+    {
+        xfwmPixmapFree (&decoration->title[i][ACTIVE]);
+        xfwmPixmapFree (&decoration->title[i][INACTIVE]);
+        xfwmPixmapFree (&decoration->top[i][ACTIVE]);
+        xfwmPixmapFree (&decoration->top[i][INACTIVE]);
+    }
+}
+
+static void
+unloadTheme (ScreenInfo *screen_info)
+{
     TRACE ("entering");
 
     if (screen_info->font_desc != NULL)
@@ -924,30 +998,11 @@ unloadTheme (ScreenInfo *screen_info)
         screen_info->font_desc = NULL;
     }
 
-    for (i = 0; i < SIDE_COUNT; i++)
-    {
-        xfwmPixmapFree (&screen_info->sides[i][ACTIVE]);
-        xfwmPixmapFree (&screen_info->sides[i][INACTIVE]);
-    }
-    for (i = 0; i < CORNER_COUNT; i++)
-    {
-        xfwmPixmapFree (&screen_info->corners[i][ACTIVE]);
-        xfwmPixmapFree (&screen_info->corners[i][INACTIVE]);
-    }
-    for (i = 0; i < BUTTON_COUNT; i++)
-    {
-        for (j = 0; j < STATE_COUNT; j++)
-        {
-            xfwmPixmapFree (&screen_info->buttons[i][j]);
-        }
-    }
-    for (i = 0; i < TITLE_COUNT; i++)
-    {
-        xfwmPixmapFree (&screen_info->title[i][ACTIVE]);
-        xfwmPixmapFree (&screen_info->title[i][INACTIVE]);
-        xfwmPixmapFree (&screen_info->top[i][ACTIVE]);
-        xfwmPixmapFree (&screen_info->top[i][INACTIVE]);
-    }
+    g_hash_table_remove_all(screen_info->decoration);
+
+    g_free(screen_info->params->theme);
+    screen_info->params->theme = NULL;
+
     if (screen_info->box_gc != None)
     {
         XFreeGC (myScreenGetXDisplay (screen_info), screen_info->box_gc);
