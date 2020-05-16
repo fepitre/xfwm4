@@ -79,6 +79,8 @@ struct _Decoration
     xfwmPixmap sides[SIDE_COUNT][2];
     xfwmPixmap title[TITLE_COUNT][2];
     xfwmPixmap top[TITLE_COUNT][2];
+
+    GdkRGBA title_colors[2];
 };
 
 struct _ScreenInfo
