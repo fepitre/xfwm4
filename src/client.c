@@ -262,12 +262,32 @@ getQubesVmName (Client *c)
                     c->qubes_vmname = g_strdup (_("[ERROR Reading VM name?!] "));
                 }
             } else {
-                c->qubes_vmname = g_strdup("[Dom0] ");
+                // In case of GuiVM get qubes_vmname from root window if set
+                if ((XGetWindowProperty (display_info->dpy, XDefaultRootWindow(display_info->dpy), atom_vmname, 0L, 0L,
+                                FALSE, AnyPropertyType, &actual_type, &actual_format, &nitems,
+                                &bytes_left, (unsigned char **) &data) == Success))
+                {
+                    if (bytes_left > 0) {
+                        if ((XGetWindowProperty (display_info->dpy, XDefaultRootWindow(display_info->dpy), atom_vmname, 0L, bytes_left,
+                                        FALSE, AnyPropertyType, &actual_type, &actual_format, &nitems,
+                                        &bytes_left, (unsigned char **) &data) == Success))
+                        {
+                            c->qubes_vmname = g_strdup_printf (_("[%s] "), data);
+                        } else {
+                            c->qubes_vmname = g_strdup (_("[ERROR Reading VM name?!] "));
+                        }
+                    } else {
+                        c->qubes_vmname = g_strdup("[Dom0] ");
+                    }
+                } else {
+                    c->qubes_vmname = g_strdup("[Dom0] ");
+                }
             }
         } else {
             c->qubes_vmname = g_strdup("[Dom0] ");
         }
     }
+    TRACE ("qubes_vmname \"%s\"", c->qubes_vmname);
 }
 
 static gchar*
