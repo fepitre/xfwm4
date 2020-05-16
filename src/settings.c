@@ -398,6 +398,25 @@ Decoration *getDecorationForColor(ScreenInfo *screen_info, guint32 color)
         xfwmPixmapLoad (screen_info, &decoration->top[i][INACTIVE], theme, imagename, screen_info->colsym, color);
     }
 
+    if (color == QUBES_LABEL_DOM0) {
+        decoration->title_colors[0] = screen_info->title_colors[0];
+        decoration->title_colors[1] = screen_info->title_colors[1];
+    } else {
+        gdouble h, s, v;
+        gtk_rgb_to_hsv(
+            1.0*((color & 0xFF0000) >> 16)/0xFF,
+            1.0*((color & 0x00FF00) >>  8)/0xFF,
+            1.0*((color & 0x0000FF) >>  0)/0xFF,
+            &h, &s, &v);
+        if (v < 0.2) {
+            decoration->title_colors[0] = qubes_title_colors_light[0];
+            decoration->title_colors[1] = qubes_title_colors_light[1];
+        } else {
+            decoration->title_colors[0] = qubes_title_colors_dark[0];
+            decoration->title_colors[1] = qubes_title_colors_dark[1];
+        }
+    }
+
     g_hash_table_insert(screen_info->decoration, GINT_TO_POINTER(color), decoration);
     return decoration;
 }

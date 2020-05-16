@@ -190,6 +190,17 @@ static const guint qubes_label_colors[] = {
     0x000000,   /* QUBES_LABEL_BLACK */
 };
 
+/* Title colors: active, inactive */
+static const GdkRGBA qubes_title_colors_dark[2] = {
+    { 0, 0, 0, 1 },
+    { 0.3, 0.3, 0.3, 1},
+};
+
+static const GdkRGBA qubes_title_colors_light[2] = {
+    { 0.8, 0.8, 0.8, 1 },
+    { 0.5, 0.5, 0.5, 1 },
+};
+
 struct _Settings
 {
     gchar  *option;

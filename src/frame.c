@@ -320,7 +320,8 @@ frameCreateTitlePixmap (Client * c, int state, int left, int right, xfwmPixmap *
         frameFillTitlePixmap (c, state, TITLE_3, x, w3, top_height, title_pm, top_pm);
         title_x = hoffset + x;
         cairo_translate (cr, title_x, title_y);
-        if (screen_info->params->title_shadow[state])
+        if (c->qubes_label_color == QUBES_LABEL_DOM0 &&
+            screen_info->params->title_shadow[state])
         {
             gdk_cairo_set_source_rgba (cr, &screen_info->title_shadow_colors[state]);
             if (screen_info->params->title_shadow[state] == TITLE_SHADOW_UNDER)
@@ -342,7 +343,7 @@ frameCreateTitlePixmap (Client * c, int state, int left, int right, xfwmPixmap *
                 cairo_translate (cr, 0, -1);
             }
         }
-        gdk_cairo_set_source_rgba (cr, &screen_info->title_colors[state]);
+        gdk_cairo_set_source_rgba (cr, &decoration->title_colors[state]);
         pango_cairo_show_layout (cr, layout);
         x = x + w3;
     }
